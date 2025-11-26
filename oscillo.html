@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Module : Labo de Signal V2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        body { background-color: #0F172A; color: white; font-family: 'Rajdhani', sans-serif; }
+        .font-tech { font-family: 'Orbitron', sans-serif; }
+        
+        /* Grille de fond améliorée */
+        .oscilloscope-screen {
+            background-color: #020617; /* Plus sombre */
+            background-image: 
+                linear-gradient(rgba(16, 185, 129, 0.2) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(16, 185, 129, 0.2) 1px, transparent 1px);
+            background-size: 40px 40px; /* Grille plus large */
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.9);
+            border: 4px solid #1E293B;
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Ligne centrale pour repère */
+        .oscilloscope-screen::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background-color: rgba(16, 185, 129, 0.4);
+            pointer-events: none;
+        }
+
+        canvas {
+            /* Effet néon plus prononcé */
+            filter: drop-shadow(0 0 4px #10B981) drop-shadow(0 0 8px #10B981);
+        }
+
+        /* Style des sliders */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #10B981;
+            cursor: pointer;
+            margin-top: -6px;
+            border: 2px solid #0F172A;
+            box-shadow: 0 0 5px #10B981;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #334155;
+            border-radius: 2px;
+        }
+        
+        .knob-label {
+            font-size: 0.7rem;
+            color: #64748B;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+            display: block;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 bg-slate-950">
+
+    <div class="max-w-5xl w-full bg-slate-900 border border-slate-800 rounded-xl p-6 md:p-8 shadow-2xl relative overflow-hidden">
+        <!-- Décoration "Hardware" -->
+        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-slate-800 via-emerald-500 to-slate-800 opacity-50"></div>
+        
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+            <div>
+                <h2 class="text-3xl font-tech text-white flex items-center">
+                    <span class="w-3 h-3 bg-emerald-500 rounded-full animate-pulse mr-3"></span>
+                    OSCILLOSCOPE <span class="text-emerald-500 ml-2">V2.0</span>
+                </h2>
+                <p class="text-slate-400 text-sm mt-1 font-mono">MODULE D'ANALYSE DE SIGNAL - TEMPS RÉEL</p>
+            </div>
+            <div class="flex gap-2">
+                <button id="pauseBtn" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded text-xs font-mono transition-colors" onclick="togglePause()">
+                    STOP / RUN
+                </button>
+            </div>
+        </div>
+
+        <div class="grid lg:grid-cols-3 gap-8">
+            
+            <!-- Panneau de Contrôle -->
+            <div class="bg-slate-800/80 p-6 rounded-lg border border-slate-700 backdrop-blur-sm">
+                <h3 class="text-emerald-400 font-bold tracking-widest mb-6 border-b border-slate-600 pb-2 flex items-center">
+                    <i class="fas fa-sliders-h mr-2"></i> CONTRÔLES
+                </h3>
+                
+                <div class="space-y-6">
+                    <!-- Fréquence -->
+                    <div>
+                        <div class="flex justify-between items-end mb-2">
+                            <span class="knob-label">Fréquence (Hz)</span>
+                            <span id="freqVal" class="font-mono text-emerald-300 text-lg">1.0</span>
+                        </div>
+                        <input type="range" id="frequency" min="0.5" max="10" step="0.1" value="1.0">
+                    </div>
+
+                    <!-- Amplitude -->
+                    <div>
+                        <div class="flex justify-between items-end mb-2">
+                            <span class="knob-label">Amplitude (V)</span>
+                            <span id="ampVal" class="font-mono text-emerald-300 text-lg">50</span>
+                        </div>
+                        <input type="range" id="amplitude" min="0" max="120" step="1" value="60">
+                    </div>
+
+                    <!-- Vitesse (Timebase) - NOUVEAU -->
+                    <div>
+                        <div class="flex justify-between items-end mb-2">
+                            <span class="knob-label text-yellow-500">Vitesse Balayage</span>
+                            <span id="speedVal" class="font-mono text-yellow-500 text-lg">Normale</span>
+                        </div>
+                        <input type="range" id="speed" min="0" max="5" step="0.1" value="1">
+                        <p class="text-[10px] text-slate-500 mt-1">Réduisez pour stabiliser la lecture</p>
+                    </div>
+
+                    <!-- Bruit -->
+                    <div>
+                        <div class="flex justify-between items-end mb-2">
+                            <span class="knob-label text-red-400">Injection Bruit</span>
+                            <span id="noiseVal" class="font-mono text-red-400 text-lg">0</span>
+                        </div>
+                        <input type="range" id="noise" min="0" max="40" step="1" value="0">
+                    </div>
+
+                    <!-- Toggle Mode -->
+                    <div class="pt-4 border-t border-slate-600">
+                         <label class="flex items-center space-x-3 cursor-pointer group">
+                            <input type="checkbox" id="complexWave" class="form-checkbox h-4 w-4 text-emerald-500 rounded bg-slate-700 border-slate-500 focus:ring-0">
+                            <span class="text-sm text-gray-300 group-hover:text-white transition">Mode Harmonique (Signal Complexe)</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Écran Oscilloscope -->
+            <div class="lg:col-span-2 flex flex-col">
+                <div class="oscilloscope-screen flex-grow h-80 w-full flex items-center justify-center relative mb-4">
+                    <canvas id="scopeCanvas"></canvas>
+                    
+                    <!-- Overlay Info -->
+                    <div class="absolute top-4 left-4 text-xs font-mono text-emerald-500/70">CH1: SOURCE A</div>
+                    <div class="absolute bottom-4 right-4 text-xs font-mono text-emerald-500/70">TRIGGER: AUTO</div>
+                </div>
+                
+                <div class="grid grid-cols-3 gap-4 text-center">
+                    <div class="bg-slate-800 p-3 rounded border border-slate-700">
+                        <div class="knob-label">Vmax</div>
+                        <div class="text-white font-mono" id="vmaxDisplay">0.0 V</div>
+                    </div>
+                    <div class="bg-slate-800 p-3 rounded border border-slate-700">
+                        <div class="knob-label">Vmin</div>
+                        <div class="text-white font-mono" id="vminDisplay">0.0 V</div>
+                    </div>
+                    <div class="bg-slate-800 p-3 rounded border border-slate-700">
+                        <div class="knob-label">Période (T)</div>
+                        <div class="text-white font-mono" id="periodDisplay">1000 ms</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('scopeCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let width, height;
+        let time = 0;
+        let isPaused = false;
+        
+        // Inputs
+        const inputs = {
+            freq: document.getElementById('frequency'),
+            amp: document.getElementById('amplitude'),
+            noise: document.getElementById('noise'),
+            speed: document.getElementById('speed'),
+            complex: document.getElementById('complexWave')
+        };
+        
+        // Displays
+        const displays = {
+            freq: document.getElementById('freqVal'),
+            amp: document.getElementById('ampVal'),
+            noise: document.getElementById('noiseVal'),
+            speed: document.getElementById('speedVal'),
+            vmax: document.getElementById('vmaxDisplay'),
+            vmin: document.getElementById('vminDisplay'),
+            period: document.getElementById('periodDisplay')
+        };
+
+        function resize() {
+            const parent = canvas.parentElement;
+            canvas.width = parent.clientWidth;
+            canvas.height = parent.clientHeight;
+            width = canvas.width;
+            height = canvas.height;
+        }
+        window.addEventListener('resize', resize);
+        resize(); // Init size
+
+        function togglePause() {
+            isPaused = !isPaused;
+            const btn = document.getElementById('pauseBtn');
+            btn.classList.toggle('bg-red-900', isPaused);
+            btn.classList.toggle('text-white', isPaused);
+            if(isPaused) btn.innerText = "PAUSED";
+            else btn.innerText = "STOP / RUN";
+        }
+
+        function draw() {
+            if (!isPaused) {
+                // Effacer l'écran complètement pour éviter le flou de mouvement
+                // On utilise un léger rectangle noir transparent pour faire un micro effet de traînée (phosphore),
+                // mais beaucoup plus léger que la version précédente.
+                ctx.fillStyle = 'rgba(2, 6, 23, 0.3)'; 
+                ctx.fillRect(0, 0, width, height);
+                
+                // Récupération valeurs
+                const freq = parseFloat(inputs.freq.value);
+                const amp = parseFloat(inputs.amp.value);
+                const noise = parseFloat(inputs.noise.value);
+                const speed = parseFloat(inputs.speed.value);
+                const isComplex = inputs.complex.checked;
+
+                // Update affichages
+                displays.freq.innerText = freq.toFixed(1);
+                displays.amp.innerText = amp;
+                displays.noise.innerText = noise;
+                displays.speed.innerText = speed === 0 ? "Pause" : speed.toFixed(1) + "x";
+                
+                // Calculs fictifs pour l'affichage des données
+                displays.vmax.innerText = `+${(amp/20).toFixed(1)} V`;
+                displays.vmin.innerText = `-${(amp/20).toFixed(1)} V`;
+                displays.period.innerText = `${(1000/freq).toFixed(0)} ms`;
+
+                ctx.beginPath();
+                ctx.strokeStyle = '#10B981';
+                ctx.lineWidth = 3;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+
+                const centerY = height / 2;
+                
+                // On dessine point par point
+                for (let x = 0; x < width; x++) {
+                    // Normalisation de X (0 à 100 approx)
+                    // On réduit le facteur pour "zoomer" sur l'onde
+                    const normalizedX = (x / width) * 20; 
+                    
+                    // Formule du signal
+                    // frequency * normalizedX : forme de l'onde dans l'espace
+                    // - time : mouvement vers la droite
+                    let waveY = Math.sin((normalizedX * freq) - (time * 0.2));
+
+                    if (isComplex) {
+                        // Ajout d'harmoniques (Fourier simple)
+                        waveY += 0.5 * Math.sin((normalizedX * freq * 3) - (time * 0.2));
+                        waveY += 0.25 * Math.sin((normalizedX * freq * 5) - (time * 0.2));
+                    }
+                    
+                    // Bruit aléatoire
+                    const randomNoise = (Math.random() - 0.5) * (noise / 10);
+                    
+                    // Calcul Y final
+                    const y = centerY + (waveY * amp * 0.8) + (randomNoise * 10);
+                    
+                    if (x === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+
+                // Incrément du temps (contrôlé par le slider speed)
+                time += speed * 0.5; 
+            }
+            
+            requestAnimationFrame(draw);
+        }
+
+        draw();
+    </script>
+</body>
+</html>
