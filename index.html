@@ -112,13 +112,17 @@
                     <i class="fas fa-wave-square text-elec-purple text-2xl group-hover:animate-pulse"></i>
                     <span class="font-tech text-xl font-bold tracking-wider text-white">NATHAN<span class="text-tech-blue">.ENG</span></span>
                 </div>
-                <div class="hidden md:flex space-x-8">
+                <!-- MENU PRINCIPAL: Ajout de items-center pour l'alignement vertical -->
+                <div class="hidden md:flex space-x-8 items-center">
                     <a href="#hero" class="hover:text-elec-purple transition-colors text-sm uppercase tracking-widest">Base</a>
                     <a href="#about" class="hover:text-elec-purple transition-colors text-sm uppercase tracking-widest">Profil</a>
                     <a href="#experience" class="hover:text-elec-purple transition-colors text-sm uppercase tracking-widest">Missions</a>
                     <a href="#projects" class="hover:text-elec-purple transition-colors text-sm uppercase tracking-widest">R&D</a>
-                    <a href="./oscillo.html" class="hover:text-elec-purple transition-colors text-sm uppercase tracking-widest">Labo</a>
-                    <a href="#contact" class="block py-3 px-4 text-center bg-tech-blue/20 text-tech-blue font-bold">Contact</a>
+                    <!-- Lien vers la démo Oscilloscope -->
+                    <a href="./oscillo.html" class="hover:text-bio-green transition-colors text-sm uppercase tracking-widest font-bold flex items-center">
+                        <i class="fas fa-flask mr-1"></i> Labo Signal
+                    </a>
+                    <a href="#contact" class="px-4 py-2 border border-tech-blue text-tech-blue rounded hover:bg-tech-blue hover:text-white transition-all text-sm uppercase font-bold shadow-[0_0_10px_rgba(59,130,246,0.5)]">Contact</a>
                 </div>
                 <button class="md:hidden text-2xl text-white" onclick="document.getElementById('mobileMenu').classList.toggle('hidden')"><i class="fas fa-bars"></i></button>
             </div>
@@ -127,10 +131,10 @@
             <a href="#hero" class="block py-3 px-4 text-center border-b border-gray-700 hover:bg-gray-800">Base</a>
             <a href="#about" class="block py-3 px-4 text-center border-b border-gray-700 hover:bg-gray-800">Profil</a>
             <a href="#experience" class="block py-3 px-4 text-center border-b border-gray-700 hover:bg-gray-800">Missions</a>
+            <a href="Demo_Signal_Oscilloscope.html" class="block py-3 px-4 text-center border-b border-gray-700 hover:bg-gray-800 text-bio-green font-bold">Labo Signal</a>
             <a href="#contact" class="block py-3 px-4 text-center bg-tech-blue/20 text-tech-blue font-bold">Contact</a>
         </div>
     </nav>
-
     <!-- HERO SECTION -->
     <section id="hero" class="min-h-screen flex items-center justify-center relative pt-16">
         <div class="max-w-7xl mx-auto w-full px-4 flex flex-col-reverse md:flex-row items-center justify-between z-10">
